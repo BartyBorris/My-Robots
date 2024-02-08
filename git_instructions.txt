@@ -26,3 +26,8 @@ Create the remote repository, and get the URL such as git@github.com:/youruser/s
 	Switch to branch to work on it
 	$git checkout refactoring
 	
+To push to remote repository
+$ git add --all
+$ git commit -m "refactored code to be object oriented"
+$ git push
+
