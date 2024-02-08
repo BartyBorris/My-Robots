@@ -1,0 +1,297 @@
+Our code base, especially in simulate.py, is getting a bit messy: it is very difficult to read this file and see the overall flow of the program. So, we will do some refactoring in this module to clean things up. It will also give us an opportunity to refresh our memory as to how everything is working. It will also make it easier to add more complexity as we continue.
+
+But first, as always, create a new git branch called refactoring from your existing motors branch, like this (just remember to use the branches motors and refactoring instead).
+
+Fetch this new branch to your local machine:
+
+    git fetch origin refactoring
+
+    git checkout refactoring
+
+Create a constants file.
+
+There are many numbers being assigned to variables in simulate.py. We want to put all these values in the same place, so we can easily modify them later. To do so, create a new file, constants.py.
+
+Add
+
+import constants as c
+
+to simulate.py.
+
+Copy each number from simulate.py into constants.py and assign them to variables, with appropriate names, in there.
+
+Return to simulate.py and replace those numbers with the new variable names. Remember to add the c. prefix to each variable name so Pyrosim knows they are stored in constants.py.
+
+Run your code. There should be no change in its behavior, because we have not added any new functionality.
+
+Note: You may need to import some libraries into constants.py.
+
+Modify a few of the values in your constants file, and verify they affect your robot's behavior.
+Create the class hierarchy.
+
+You may already be finding it hard to remember where in your code certain things happen. To make your code more readable, and to make it more easily modifiable in the modules to come, we are going to do some object oriented programming (OOP). If you have not done OOP with Python before, consider following a tutorial first, such as this one.
+
+We will start by creating some classes and organizing them into a hierarchy. This hierarchy will reflect the natural hierarchy that exists in your code so far: there is a simulation, and in that simulation exists a world (described in world.sdf) and a robot (described in body.urdf). The robot itself now has two sensors and two motors.
+
+First, comment out every line in simulate.py and add just one statement: pass. When you run this file now, nothing should happen. We are going to copy and paste parts of the code in there into various classes we will now create.
+
+So far, we have named our files using verbs, indicating what they do: generate.py a world and robot, simulate.py them, and then analyze.py them. We will now create one file for each class, and we will use a noun to name it.
+
+Start by creating a file called simulation.py and include
+
+class SIMULATION:
+
+    def __init__(self):
+
+        pass
+
+Note: We are going to name all of our classes in ALL CAPS to distinguish them from file names and variable names.
+
+The first statement gives the name of the class, the second defines a constructor for this class, and the third statement indicates that the constructor does not do anything yet.
+
+Replace pass in simulate.py with
+
+simulation = SIMULATION()
+
+which will create an object -- an instance of the SIMULATION class -- called simulation.
+
+Include this class at the top of simulate.py by adding
+
+from simulation import SIMULATION
+
+Run simulate.py. You should still see that it does nothing.
+
+Create two new files, world.py and robot.py, and create two new classes called WORLD and ROBOT in them, respectively. Initialize them with empty constructors like you just did above.
+
+Let's start our hierarchy now. Inside SIMULATION's constructor, replace pass with
+
+self.world = WORLD()
+
+which creates a new SIMULATION attribute, and that attribute will hold an instance of the WORLD class. Read this is you are not familiar with the self keyword.
+
+Similarly, create a ROBOT instance in SIMULATION as well.
+
+Run your code. You should note no change, since these new classes do not do anything yet.
+
+In the same way that SIMULATION contains a WORLD and a ROBOT, we will create a SENSOR class and a MOTOR class, and store some instances of each in ROBOT.
+
+To do so, create sensor.py and motor.py.
+
+Create a SENSOR class and MOTOR class in each, with empty constructors, like you just did above.
+
+There is a difference here: whenever a ROBOT instance is created, we are going to create s SENSOR instances and m MOTOR instances, assuming that the robot has s sensors and m motors in it. (Currently your robot has s=2 touch sensors and m=2 motors.)
+
+So, create two empty dictionaries in ROBOT's constructor called self.sensors and self.motors respectively. We will fill these dictionaries with instances of SENSOR and MOTOR in a little while.
+Add the classes' constructors.
+
+Now let's turn the simulation back on. Cut the statements from simulate.py that connect to pybullet, set the additional search path, set gravity, and Prepare_To_Simulate(), and paste them into SIMULATION's constructor. For statements that create a variable, add the self. prefix to the variable's name so that it becomes an instance attribute.
+
+Run your code. You should see the empty simulation now. If you get errors, make sure you have included the appropriate libraries in SIMULATION.
+
+Similarly, cut the statements from simulate.py that load world.sdf and plane.urdf and paste them into WORLD's constructor. Remember to add the self. prefix where needed.
+
+Running simulate.py now, you should see the single cube that exists in world.sdf, and the checkered floor plane.
+
+And, finally, cut the statements that load and prepare to simulate body.urdf and paste them into ROBOT's constructor. Remember to add the self. prefix where needed.
+
+Running your code now, you should see the robot.
+Add the classes' functionality.
+
+Now that our class hierarchy is complete and constructed, we will gradually move the "meat" of simulate.py into it.
+
+To start, cut the for loop, and all the statements it calls, from simulate.py into a method called Run() in SIMULATION.
+
+Comment out all the statements inside the for loop.
+
+Add in a statement that prints the loop index variable.
+
+In simulate.py, call Run() just after your create simulation.
+
+When you run simulate.py, you should see that the loop has been executed.
+
+In the for loop, uncomment the statements that step the simulation, and sleep() for a short time.
+
+Running your code now should allow you to click, grab, and drag your robot as you did previously.
+Add the classes' destructors.
+
+Before we forget, there is one act of cleaning up that we should perform: disconnecting from the simulator (see the bottom of simulate.py). This statement should be called when the simulation terminates. In other words, when the class instance simulation is freed from memory. This happens when simulate.py ends, because simulation is defined in there. So, cut the statement that disconnects from pybullet in simulate.py and copy it into a destructor for SIMULATION by adding this
+
+def __del__(self):
+
+    p.disconnect()
+
+to simulation.py.
+Make the robot sense (again).
+
+In the for loop, you will note that sensor values are drawn from links BackLeg and FrontLeg. But what if we create a different robot that does not have links with these names? Our program will crash. The same holds for the motors, which try to send torques to joints named Torso_BackLeg and Torso_FrontLeg.
+
+We are going to fix this part of our code so that sensor values can be drawn from any links, and motor commands can sent to any joints, regardless of the robot. We will do so by adding a touch sensor to every link and a motor to every joint in body.urdf.
+
+Where in our class hierarchy should we do so? In ROBOT.
+
+Create the method Prepare_To_Sense() in ROBOT.
+
+Call this method from ROBOT's constructor just after Prepare_To_Simulate().
+
+Move the statement that creates self.sensors from ROBOT's constructor into this method.
+
+After that statement, include a for loop like this:
+
+for linkName in pyrosim.linkNamesToIndices:
+
+    print(linkName)
+
+Note: If you get an error that linkNamesToIndices is not recognized, ensure Prepare_To_Simulate is called before Prepare_To_Sense: the former method creates linkNamesToIndices.
+
+Note: linkNamesToIndices is a dictionary used inside of pyrosim to hide a lot of details from you. But, for this, we will use it to give us the name of every link in body.urdf. Verify this by running simulate.py. You should see three names printed.
+
+We will now create an instance of the SENSOR class, one for each link. Do this by replacing the print statement with
+
+    self.sensors[linkName] = SENSOR(linkName)
+
+This results in the SENSOR's constructor being called three times. Each time, it returns an instance of SENSOR. That instance is stored as an entry in the self.sensors dictionary. The key for each dictionary entry is the name of the link that stores that sensor.
+
+Note that we are passing in linkName as an argument to SENSOR's constructor. So, add this argument to SENSOR's constructor in sensor.py. Capture this link name in the class instance by assigning it to self.linkName. We will make use of this shortly.
+
+Run simulate.py and debug if required.
+
+You'll see in simulate.py that we prepare each sensor by creating a vector of zeros. This vector is filled once the simulation starts. Cut these two lines from simulate.py. Which constructor should they moved into?
+
+Hint: You will not need both statements, just one.
+
+Rename this vector to self.values in the constructor.
+
+print this vector just after it is created in the constructor. You should see three empty vectors printed, before the simulation starts.
+
+Remove the print statement.
+
+We are ready to re-enable sensing in the robot now. Create a new method in ROBOT called Sense().
+
+Call this method from simulate.Run(), just after the simulation has been stepped.
+
+Cut the two commented-out statements from within the for loop in simulate.Run() that get values from the touch sensors, and paste them into robot.Sense().
+
+Note that they really do not belong here, because they are about the robot's sensors, not the robot itself.
+
+So, create a method in SENSOR called Get_Value().
+
+Delete one of the two statements in robot.Sense().
+
+Cut the other one and paste it into sensor.Get_Value().
+
+***********
+
+Modify the statement so that it stores the values in self.values and uses self.linkName to know which link to extract touch sensor values from.
+
+Create a for loop in robot.Sense() that iterates over all the SENSOR instances stored in the dictionary self.sensors.
+
+In ith pass through the for loop, call the ith SENSOR instance's Get_Value() method. When called, this method should store the current value of the touch sensor in self.values. But, we do not know which element it should be stored in. It should be stored in the tth element, where t is the current time step.
+
+This means that we will have to pass t, or whatever variable name you chose for the for loop in simulate.Run(), down into this method. Add arguments to the methods involved to get this variable into sensor.Get_Value().
+
+Now you can get the touch sensor value in sensor.Get_Value() and store it in the tth element of self.values.
+
+Immediately after doing so, print the entire vector in Get_Value().
+
+When you run your code now, you should see all three vectors printed per time step. As the simulation continues, these vectors should fill with values.
+
+Modify sensor.Get_Value() to only print these vectors at the last time step. You should see three vectors with no zeros in them.
+Make the robot act (again).
+
+In robot.py, create a new method called Prepare_To_Act(), modeled similarly to Prepare_To_Sense().
+
+Because we are attaching a motor to every joint, you will need to use jointName instead of linkName, and use pyrosim.jointNamesToIndices instead of pyrosim.linkNamesToIndices.
+
+Following the example in SENSOR's constructor, in MOTOR's constructor, assign jointName to self.jointName.
+
+Run your code. Everything should still work as before.
+
+Create a new empty method, containing just pass, in MOTOR called Prepare_To_Act().
+
+Call this method from MOTOR's constructor.
+
+Have a look at SENSOR's Prepare_To_Sense(). In the same way that method prepares a vector for storing sensor values, MOTOR's Prepare_To_Act() should also create a vector of values to send to the motor. Consult simulation.py. You will see that two of the remaining statements create motorValues. Cut those statements from here, and paste them into Prepare_To_Act(). Leave them commented out for the moment.
+
+Soon, we will want to set different amplitudes, frequencies and phase offsets for each motor. These three variables are most likely currently in your constants.py file now.
+
+In Prepare_To_Act(), create three instance attributes self.amplitude, self.frequency, and self.offset. This will allow us to easily modify the properties of each motor.
+
+For now, set each variable to the value stored in constants.py. This will mean that both motors will have the same amplitude, frequency and offset for now.
+
+Run your code. You should still see no change, because the robot is not acting yet.
+
+Uncomment the commented-out motorValues statements. Modify them so that this variable becomes an attribute of MOTOR. Replace the calls to c.amplitude (or constants.amplitude) in them with self.amplitude. Do the same for the other two variables. This now means that self.motorValues will be set using each MOTOR instance's own amplitude, frequency, and phase offset.
+
+Add a new empty method (only pass is in it) to ROBOT called Act().
+
+Call this method in SIMULATION's for loop, right after you allow the robot to Sense(). Let's pause here for a moment. This is the heart of your simulation. During each simulation time step, stepSimulation() updates the simulated world. The robot then senses some (but perhaps not all) of the changes that have occurred. It then acts on that world.
+
+Like you did in Sense(), iterate over each item in the self.motors dictionary.
+
+***********
+
+Add a new empty method (only pass is in it) to ROBOT called Act().
+
+Call this method in SIMULATION's for loop, right after you allow the robot to Sense(). Let's pause here for a moment. This is the heart of your simulation. During each simulation time step, stepSimulation() updates the simulated world. The robot then senses some (but perhaps not all) of the changes that have occurred. It then acts on that world.
+
+Like you did in Sense(), iterate over each item in the self.motors dictionary.
+
+In this loop, have the ith motor call a new method, Set_Value().
+
+Create this method in MOTOR, and include just a pass statement for now.
+
+Run your code. Your robot should still sense but not yet act.
+
+In SIMULATION's Run() method, there should only be two remaining commented-out statements in the for loop. They should both be about the motors. Cut these statements out of here and...
+
+
+*****
+
+...paste them into MOTOR's Set_Value() method.
+
+Delete one of them (doesn't matter which one).
+
+Uncomment the remaining one.
+
+The statement requires access to robot. This should currently be stored as self.robot in ROBOT. Pass this instance down into Set_Value() so it can be accessed. (You do not need to import robot in motor.py.)
+
+Replace the reference to a specific joint with self.jointName.
+
+Ensure that targetLocation (the target, or desired angle for this motor) is set using self.motorValues. Consult SENSOR's Get_Value() to determine how to know which element from the self.motorValues vector should be used.
+
+Run your code. You may need to include some libraries in MOTOR. Once your simulation is running, you should see your robot acting again.
+
+You should also see the sensor repercussions of those actions reflected in the three sensor vectors printed at the end of the simulation.
+
+You can remove the statement that prints the sensor value vectors now.
+Finishing up.
+
+
+***************
+
+You should only see a few remaining commented-out statements in simulate.py. They have to do with saving sensor values, and motor values, to files. Which classes are best suited to receive these statements?
+
+Create a new method called Save_Values() for the class that should handle the saving of sensor values. Cut those statements(s) from simulate.py and paste them into this method. Uncomment it/them, and modify appropriately. Note that you will have to change the file name and the name of the vector to be saved into it.
+
+Similarly, create a new method called Save_Values() for the class that should handle the saving of motor values. Cut those statements(s) from simulate.py and paste it/them into this method. Note that you will have to change the file name and the name of the vector to be saved into it.
+
+Whenever you wish to save out sensor and/or motor values, you can call either or both of these methods. You can call them when simulation.Run() is about to finish, or you can add a call to them in SIMULATION's destructor. For now, we will not call these methods at all.
+
+If simulate.py has any commented-out library importations or other preliminary statements, delete them.
+Flexing your bot's (and class hiearchy's) muscles.
+
+Now that we have objectified your code, let's demonstrate its flexibility.
+
+Modify MOTOR's Prepare_To_Act() method so that one motor oscillates at half the frequency of the other (doesn't matter which one). This will require you to include a conditional statement, dependent on self.jointName.
+
+Run your simulation at a slow enough speed so that you can see the different rates of oscillation.
+
+Capture a video of your robot so this difference is clearly visible.
+
+Upload the video to YouTube.
+
+Create a post in this subreddit.
+
+Paste the YouTube URL into the post.
+
+Name the post appropriately and submit it.
